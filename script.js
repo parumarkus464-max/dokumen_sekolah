@@ -746,6 +746,7 @@ const PREDEFINED_TITLES = {
 };
 
 const AUTH_KEY = 'sisfo_auth';
+let currentUser = null;
 
 // ============ FIREBASE DATABASE FUNCTIONS ============
 window.getPasswords = async function() {
@@ -781,7 +782,15 @@ window.saveMedia = async function(mediaData) {
   await setDoc(docRef, mediaData);
 };
 
-let currentUser = null;
+// ============ HELPER ============
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function extractYoutubeId(url) {
+  const m = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
 
 // ============ LOGIN / LOGOUT ============
 window.handleLogin = async function(e) {
@@ -838,7 +847,6 @@ window.showApp = async function() {
     document.getElementById('userRole').textContent = 'ADMIN DINAS';
     document.getElementById('userName').textContent = 'Administrator';
     window.showSection('dashboard');
-    
     await window.renderStatusSection();
     window.populateStatusFilters();
     await window.renderTopSchools();
@@ -1317,11 +1325,6 @@ window.closePreview = function() {
   document.getElementById('previewModal').classList.remove('active');
 };
 
-function extractYoutubeId(url) {
-  const m = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
-  return m ? m[1] : null;
-}
-
 // ============ PROFILE & PASSWORD ============
 window.showSection = function(name) {
   document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.remove('active'));
@@ -1386,10 +1389,6 @@ window.changePassword = async function() {
     alert("Gagal mengubah password.");
   }
 };
-
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
 
 // ============ FILTER EVENTS ============
 document.getElementById('searchSchool').addEventListener('input', () => {
