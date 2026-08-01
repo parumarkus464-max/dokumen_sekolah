@@ -23,18 +23,16 @@
           <span class="role-badge" id="userRole">-</span>
           <span id="userName">-</span>
         </div>
-        <button class="btn btn-sm btn-outline btn-white" onclick="showSection('profile')">⚙️ Profil</button>
-        <button class="btn btn-sm btn-danger" onclick="handleLogout()">🚪 Logout</button>
+        <button class="btn btn-sm btn-outline btn-white" onclick="showSection('profile')">️ Profil</button>
+        <button class="btn btn-sm btn-danger" onclick="handleLogout()"> Logout</button>
       </div>
     </div>
   </header>
 
   <div class="container">
-    <!-- DASHBOARD SECTION -->
     <div class="section active" id="section-dashboard">
       <div class="dashboard-grid" id="dashboardGrid"></div>
       
-      <!-- Admin: School List -->
       <div id="adminSchoolList">
         <h2 style="margin-bottom:1rem;"> Daftar Seluruh Sekolah</h2>
         <div class="search-panel">
@@ -61,7 +59,6 @@
         </div>
       </div>
       
-      <!-- Sekolah: My Media -->
       <div id="sekolahMediaSection" style="display:none;">
         <h2 style="margin-bottom:1rem;">📁 Media Sekolah Saya</h2>
         <div class="tabs">
@@ -94,7 +91,6 @@
       </div>
     </div>
     
-    <!-- PROFILE SECTION -->
     <div class="section" id="section-profile">
       <h2 style="margin-bottom:1rem;">⚙️ Pengaturan Akun</h2>
       <div class="school-info-card">
@@ -108,7 +104,7 @@
       </div>
       
       <div style="background:white; padding:1.5rem; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); max-width:500px;">
-        <h3 style="margin-bottom:1rem;"> Ganti Password</h3>
+        <h3 style="margin-bottom:1rem;">🔒 Ganti Password</h3>
         <div class="form-group"><label>Password Lama</label><input type="password" id="oldPass"></div>
         <div class="form-group"><label>Password Baru</label><input type="password" id="newPass"></div>
         <div class="form-group"><label>Konfirmasi Password Baru</label><input type="password" id="confirmPass"></div>
@@ -119,7 +115,6 @@
   </div>
 </div>
 
-<!-- Modal Form Media -->
 <div class="modal" id="formModal">
   <div class="modal-content" style="max-width:500px;">
     <button class="modal-close" onclick="closeForm()">✕</button>
@@ -159,15 +154,13 @@
   </div>
 </div>
 
-<!-- Modal Preview -->
 <div class="modal" id="previewModal">
   <div class="modal-content">
-    <button class="modal-close" onclick="closePreview()">✕</button>
+    <button class="modal-close" onclick="closePreview()"></button>
     <div id="previewContent"></div>
   </div>
 </div>
 
-<!-- Container untuk footer yang akan dimuat secara dinamis -->
 <div id="footer-container"></div>
 
 <script src="script.js"></script>
