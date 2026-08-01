@@ -75,7 +75,60 @@
     <!-- DASHBOARD SECTION -->
     <div class="section active" id="section-dashboard">
       <div class="dashboard-grid" id="dashboardGrid"></div>
-      
+      <!-- Admin: Status Pengiriman Sekolah -->
+<div id="adminStatusSection" style="margin-bottom:2rem;">
+  <h2 style="margin-bottom:1rem;">📊 Status Pengiriman Media Sekolah</h2>
+  
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="dash-card success">
+      <div class="dash-label">✅ Sudah Kirim</div>
+      <div class="dash-value" id="countSudah">0</div>
+      <div class="dash-sub">Sekolah</div>
+    </div>
+    <div class="dash-card warning">
+      <div class="dash-label">⏳ Belum Kirim</div>
+      <div class="dash-value" id="countBelum">0</div>
+      <div class="dash-sub">Sekolah</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-label">📈 Persentase</div>
+      <div class="dash-value" id="countPersen">0%</div>
+      <div class="dash-sub">Sudah aktif</div>
+    </div>
+  </div>
+  
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchStatusTab('belum', this)">⏳ Belum Kirim (<span id="tabBelum">0</span>)</button>
+    <button class="tab-btn" onclick="switchStatusTab('sudah', this)">✅ Sudah Kirim (<span id="tabSudah">0</span>)</button>
+  </div>
+  
+  <div class="search-panel">
+    <div class="search-row">
+      <input type="text" class="search-input" id="searchStatus" placeholder="🔍 Cari nama sekolah atau kecamatan...">
+      <select class="filter-select" id="filterBentukStatus">
+        <option value="">Semua Bentuk</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Nama Sekolah</th>
+          <th>NPSN</th>
+          <th>Bentuk</th>
+          <th>Kecamatan</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="statusTableBody"></tbody>
+    </table>
+    <div class="pagination" id="statusPagination"></div>
+  </div>
+</div>
       <!-- Admin: School List -->
       <div id="adminSchoolList">
         <h2 style="margin-bottom:1rem;">📊 Daftar Seluruh Sekolah</h2>
