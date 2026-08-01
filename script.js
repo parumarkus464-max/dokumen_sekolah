@@ -2,7 +2,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ⚠️ PENTING: GANTI DENGAN KONFIGURASI FIREBASE ANDA SENDIRI
 const firebaseConfig = {
   apiKey: "AIzaSyAVoYEeOwl4Ndzq4J4FsIKmoc8zyzRtodQ",
   authDomain: "parkir-premium.firebaseapp.com",
@@ -20,7 +19,7 @@ try {
   db = getFirestore(app);
   console.log("✅ Firebase berhasil diinisialisasi");
 } catch (error) {
-  console.error("❌ Gagal inisialisasi Firebase. Pastikan firebaseConfig sudah diisi dengan benar!", error);
+  console.error("❌ Gagal inisialisasi Firebase:", error);
 }
 
 // ============ DATA SEKOLAH (LENGKAP) ============
@@ -791,7 +790,6 @@ window.handleLogin = async function(e) {
   const pass = document.getElementById('loginPass').value;
   const errEl = document.getElementById('loginError');
   
-  console.log("🔍 Mencoba login...");
   try {
     if (user.toLowerCase() === 'admin') {
       const p = await window.getPasswords();
@@ -799,7 +797,6 @@ window.handleLogin = async function(e) {
       if (pass === adminPass) {
         currentUser = { type: 'admin' };
         localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
-        console.log("✅ Login Admin Berhasil!");
         await window.showApp();
         return;
       }
@@ -810,18 +807,16 @@ window.handleLogin = async function(e) {
         if (pass === correctPass) {
           currentUser = { type: 'sekolah', schoolId: school.id, school };
           localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
-          console.log("✅ Login Sekolah Berhasil!");
           await window.showApp();
           return;
         }
       }
     }
-    console.warn("⚠️ Username atau password salah!");
     errEl.classList.add('show');
     setTimeout(() => errEl.classList.remove('show'), 3000);
   } catch (error) {
     console.error("💥 ERROR SAAT LOGIN:", error);
-    alert("Terjadi kesalahan sistem. Pastikan konfigurasi Firebase sudah benar.");
+    alert("Terjadi kesalahan sistem.");
   }
 };
 
@@ -846,7 +841,7 @@ window.showApp = async function() {
     
     await window.renderStatusSection();
     window.populateStatusFilters();
-    await window.renderTopSchools(); // ✅ TAMBAHAN: Render leaderboard
+    await window.renderTopSchools();
   } else {
     document.getElementById('userRole').textContent = 'SEKOLAH';
     document.getElementById('userName').textContent = currentUser.school.nama;
@@ -854,8 +849,11 @@ window.showApp = async function() {
   }
   
   await window.renderDashboard();
-  if (currentUser.type === 'admin') await window.renderSchoolTable();
-  else await window.renderMyMedia();
+  if (currentUser.type === 'admin') {
+    await window.renderSchoolTable();
+  } else {
+    await window.renderMyMedia();
+  }
 };
 
 // ============ DASHBOARD ============
@@ -880,9 +878,8 @@ window.renderDashboard = async function() {
       <div class="dash-card warning"><div class="dash-label">📸 Total Foto</div><div class="dash-value">${totalFoto}</div><div class="dash-sub">Dari seluruh sekolah</div></div>
     `;
     
-    await window.renderTopSchools(); // ✅ TAMBAHAN: Refresh leaderboard saat dashboard di-render ulang
+    await window.renderTopSchools();
   } else {
-    // ... kode untuk sekolah (tidak diubah)
     const m = media[currentUser.schoolId] || { foto: [], video: [], dokumen: [] };
     const total = (m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0);
     grid.innerHTML = `
@@ -903,7 +900,6 @@ window.renderTopSchools = async function() {
   
   const media = await window.getMedia();
   
-  // Hitung total media per sekolah
   const schoolStats = schools.map(s => {
     const m = media[s.id] || { foto: [], video: [], dokumen: [] };
     const fotoCount = m.foto?.length || 0;
@@ -920,13 +916,11 @@ window.renderTopSchools = async function() {
     };
   });
   
-  // Filter hanya yang punya media, lalu urutkan descending
   const activeSchools = schoolStats
     .filter(s => s.total > 0)
     .sort((a, b) => b.total - a.total)
-    .slice(0, 10); // Ambil top 5
+    .slice(0, 5);
   
-  // Sembunyikan section jika tidak ada sekolah aktif
   if (activeSchools.length === 0) {
     section.style.display = 'none';
     return;
@@ -934,14 +928,13 @@ window.renderTopSchools = async function() {
   
   section.style.display = 'block';
   
-  // Medali untuk 3 teratas
   const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
   const rankColors = [
-    'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', // Emas
-    'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', // Perak
-    'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)', // Perunggu
-    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', // Biru muda
-    'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)'  // Ungu muda
+    'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+    'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+    'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)',
+    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+    'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)'
   ];
   
   container.innerHTML = activeSchools.map((s, idx) => `
@@ -1041,8 +1034,9 @@ window.renderSchoolTable = async function() {
   }
   
   const pag = document.getElementById('pagination');
-  if (totalPages <= 1) { pag.innerHTML = ''; }
-  else {
+  if (totalPages <= 1) {
+    pag.innerHTML = '';
+  } else {
     let html = `<button class="page-btn" onclick="window.goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
     for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) {
       html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="window.goPage(${i})">${i}</button>`;
@@ -1067,11 +1061,8 @@ window.viewSchoolMedia = async function(schoolId) {
   currentUser = { type: 'sekolah', schoolId, school };
   
   await window.renderMyMedia();
-  
-  // PERBAIKAN: Gunakan showSection untuk berpindah ke section media
   window.showSection('sekolahMedia');
 
-  // Tambahkan tombol kembali jika belum ada
   const mediaSection = document.getElementById('section-sekolahMedia');
   if (!document.getElementById('backBtn')) {
     const btn = document.createElement('button');
@@ -1082,21 +1073,16 @@ window.viewSchoolMedia = async function(schoolId) {
     btn.onclick = async () => {
       currentUser = origUser;
       btn.remove();
-      
-      // Kembalikan tampilan ke dashboard admin
       window.showSection('dashboard');
       await window.renderDashboard();
       await window.renderSchoolTable();
       await window.renderStatusSection();
+      await window.renderTopSchools();
     };
     mediaSection.insertBefore(btn, mediaSection.firstChild);
   }
 };
 
-// Masukkan tombol di paling atas section media
-    mediaSection.insertBefore(btn, mediaSection.firstChild);
-  }
-};
 // ============ SEKOLAH: MY MEDIA ============
 let currentMediaTab = 'foto';
 let currentFormType = null;
@@ -1117,7 +1103,6 @@ window.renderMyMedia = async function() {
 
 window.switchMediaTab = function(tab, btn) {
   currentMediaTab = tab;
-  // PERBAIKAN: Scope hanya di dalam section-sekolahMedia
   document.querySelectorAll('#section-sekolahMedia .tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('#section-sekolahMedia .section').forEach(s => s.classList.remove('active'));
@@ -1196,7 +1181,6 @@ window.renderDokumen = function(items) {
   `).join('');
 };
 
-// ============ HANDLE TITLE SELECT ============
 window.handleTitleSelect = function() {
   const select = document.getElementById('fTitleSelect');
   const customGroup = document.getElementById('fTitleCustomGroup');
@@ -1212,7 +1196,6 @@ window.handleTitleSelect = function() {
   }
 };
 
-// ============ MEDIA FORM ============
 window.openMediaForm = function(type) {
   currentFormType = type;
   const titles = { foto: 'Tambah Foto', video: 'Tambah Video', dokumen: 'Tambah Dokumen' };
@@ -1262,10 +1245,13 @@ window.submitMedia = async function(e) {
   
   const finish = async (finalUrl) => {
     const media = await window.getMedia();
-    if (!media[currentUser.schoolId]) media[currentUser.schoolId] = { foto: [], video: [], dokumen: [] };
+    if (!media[currentUser.schoolId]) {
+      media[currentUser.schoolId] = { foto: [], video: [], dokumen: [] };
+    }
     media[currentUser.schoolId][currentFormType].push({
       id: Date.now(),
-      title, desc,
+      title,
+      desc,
       url: finalUrl
     });
     await window.saveMedia(media);
@@ -1277,22 +1263,22 @@ window.submitMedia = async function(e) {
   if (currentFormType === 'foto' && fileInput.files[0] && !url) {
     const file = fileInput.files[0];
     if (file.size > 300000) {
-      alert('Ukuran file terlalu besar (Maks 300KB). Silakan kompres foto atau gunakan URL gambar dari internet/Google Drive.');
+      alert('Ukuran file terlalu besar (Maks 300KB).');
       return;
     }
     const reader = new FileReader();
     reader.onload = async (ev) => {
       await finish(ev.target.result);
     };
-    reader.onerror = () => { // PERBAIKAN: Menambahkan error handling FileReader
-      alert('Gagal membaca file. Silakan coba lagi atau gunakan URL gambar.');
+    reader.onerror = () => {
+      alert('Gagal membaca file.');
     };
     reader.readAsDataURL(file);
   } else if (currentFormType === 'video') {
     const ytId = extractYoutubeId(url);
-    await finish(ytId ? `https://www.youtube.com/embed/${ytId}` : url); // PERBAIKAN: Menambahkan await
+    await finish(ytId ? `https://www.youtube.com/embed/${ytId}` : url);
   } else {
-    await finish(url); // PERBAIKAN: Menambahkan await
+    await finish(url);
   }
 };
 
@@ -1338,13 +1324,10 @@ function extractYoutubeId(url) {
 
 // ============ PROFILE & PASSWORD ============
 window.showSection = function(name) {
-  // PERBAIKAN: Hanya mempengaruhi section utama (ID berawalan "section-")
-  // Agar tidak merusak tab media-foto/video/dokumen yang juga punya class "section"
   document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.remove('active'));
   const target = document.getElementById('section-' + name);
   if (target) target.classList.add('active');
   
-  // Logika profil tetap sama
   if (name === 'profile' && currentUser.type === 'sekolah') {
     document.getElementById('profileSchoolName').textContent = currentUser.school.nama;
     document.getElementById('profileNpsn').textContent = currentUser.school.npsn;
@@ -1359,7 +1342,6 @@ window.showSection = function(name) {
     document.getElementById('profileRole').textContent = 'Admin Dinas';
   }
 };
-
 
 window.changePassword = async function() {
   const oldPass = document.getElementById('oldPass').value;
@@ -1401,7 +1383,7 @@ window.changePassword = async function() {
     document.getElementById('confirmPass').value = '';
   } catch (error) {
     console.error("Error ganti password:", error);
-    alert("Gagal mengubah password. Cek koneksi Firebase.");
+    alert("Gagal mengubah password.");
   }
 };
 
@@ -1410,9 +1392,18 @@ function escapeHtml(str) {
 }
 
 // ============ FILTER EVENTS ============
-document.getElementById('searchSchool').addEventListener('input', () => { currentPage = 1; window.renderSchoolTable(); });
-document.getElementById('filterBentuk').addEventListener('change', () => { currentPage = 1; window.renderSchoolTable(); });
-document.getElementById('filterKec').addEventListener('change', () => { currentPage = 1; window.renderSchoolTable(); });
+document.getElementById('searchSchool').addEventListener('input', () => {
+  currentPage = 1;
+  window.renderSchoolTable();
+});
+document.getElementById('filterBentuk').addEventListener('change', () => {
+  currentPage = 1;
+  window.renderSchoolTable();
+});
+document.getElementById('filterKec').addEventListener('change', () => {
+  currentPage = 1;
+  window.renderSchoolTable();
+});
 
 const bentukSet = new Set(schools.map(s => s.bentuk));
 const kecSet = new Set(schools.map(s => s.kecamatan));
@@ -1420,12 +1411,14 @@ const bentukSelect = document.getElementById('filterBentuk');
 const kecSelect = document.getElementById('filterKec');
 [...bentukSet].sort().forEach(b => {
   const opt = document.createElement('option');
-  opt.value = b; opt.textContent = b;
+  opt.value = b;
+  opt.textContent = b;
   bentukSelect.appendChild(opt);
 });
 [...kecSet].sort().forEach(k => {
   const opt = document.createElement('option');
-  opt.value = k; opt.textContent = k;
+  opt.value = k;
+  opt.textContent = k;
   kecSelect.appendChild(opt);
 });
 
@@ -1460,7 +1453,8 @@ window.populateStatusFilters = function() {
     const bentukSet = new Set(schools.map(s => s.bentuk));
     [...bentukSet].sort().forEach(b => {
       const opt = document.createElement('option');
-      opt.value = b; opt.textContent = b;
+      opt.value = b;
+      opt.textContent = b;
       bentukSelect.appendChild(opt);
     });
   }
@@ -1483,8 +1477,11 @@ window.renderStatusSection = async function() {
   schools.forEach(s => {
     const m = media[s.id];
     const totalMedia = m ? ((m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0)) : 0;
-    if (totalMedia > 0) sudahCount++;
-    else belumCount++;
+    if (totalMedia > 0) {
+      sudahCount++;
+    } else {
+      belumCount++;
+    }
   });
   
   const persen = schools.length > 0 ? ((sudahCount / schools.length) * 100).toFixed(1) : 0;
@@ -1559,8 +1556,9 @@ window.renderStatusTable = async function() {
   }
   
   const pag = document.getElementById('statusPagination');
-  if (totalPages <= 1) { pag.innerHTML = ''; }
-  else {
+  if (totalPages <= 1) {
+    pag.innerHTML = '';
+  } else {
     let html = `<button class="page-btn" onclick="window.goStatusPage(${statusPage-1})" ${statusPage===1?'disabled':''}>‹</button>`;
     for (let i = Math.max(1, statusPage-2); i <= Math.min(totalPages, statusPage+2); i++) {
       html += `<button class="page-btn ${i===statusPage?'active':''}" onclick="window.goStatusPage(${i})">${i}</button>`;
@@ -1570,12 +1568,11 @@ window.renderStatusTable = async function() {
   }
 };
 
-window.goStatusPage = async function(p) { // PERBAIKAN: Ditambahkan async
-  const media = await window.getMedia(); // PERBAIKAN: Ditambahkan await
+window.goStatusPage = async function(p) {
+  const media = await window.getMedia();
   const q = document.getElementById('searchStatus').value.toLowerCase();
   const bentuk = document.getElementById('filterBentukStatus').value;
   
-  // PERBAIKAN: Logika filter sekarang mencakup matchStatus agar perhitungan halaman akurat
   const filtered = schools.filter(s => {
     const m = media[s.id];
     const totalMedia = m ? ((m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0)) : 0;
@@ -1595,12 +1592,17 @@ window.goStatusPage = async function(p) { // PERBAIKAN: Ditambahkan async
   window.renderStatusTable();
 };
 
-// Event listener untuk search & filter status
 const searchStatusEl = document.getElementById('searchStatus');
 if (searchStatusEl) {
-  searchStatusEl.addEventListener('input', () => { statusPage = 1; window.renderStatusTable(); });
+  searchStatusEl.addEventListener('input', () => {
+    statusPage = 1;
+    window.renderStatusTable();
+  });
 }
 const filterBentukStatusEl = document.getElementById('filterBentukStatus');
 if (filterBentukStatusEl) {
-  filterBentukStatusEl.addEventListener('change', () => { statusPage = 1; window.renderStatusTable(); });
+  filterBentukStatusEl.addEventListener('change', () => {
+    statusPage = 1;
+    window.renderStatusTable();
+  });
 }
