@@ -842,16 +842,14 @@ window.showApp = async function() {
   if (currentUser.type === 'admin') {
     document.getElementById('userRole').textContent = 'ADMIN DINAS';
     document.getElementById('userName').textContent = 'Administrator';
-    // PERBAIKAN: Tidak perlu mengatur display manual, cukup panggil showSection
     window.showSection('dashboard');
     
-    // Render status & tabel setelah section tampil
     await window.renderStatusSection();
     window.populateStatusFilters();
+    await window.renderTopSchools(); // ✅ TAMBAHAN: Render leaderboard
   } else {
     document.getElementById('userRole').textContent = 'SEKOLAH';
     document.getElementById('userName').textContent = currentUser.school.nama;
-    // PERBAIKAN: Langsung tampilkan section media sekolah
     window.showSection('sekolahMedia');
   }
   
@@ -891,6 +889,110 @@ window.renderDashboard = async function() {
       <div class="dash-card warning"><div class="dash-label">📊 Total Media</div><div class="dash-value">${total}</div></div>
     `;
   }
+};
+
+// ============ 🏆 TOP SCHOOLS LEADERBOARD ============
+window.renderTopSchools = async function() {
+  const container = document.getElementById('topSchoolsList');
+  const section = document.getElementById('topSchoolsSection');
+  
+  if (!container || !section) return;
+  
+  const media = await window.getMedia();
+  
+  // Hitung total media per sekolah
+  const schoolStats = schools.map(s => {
+    const m = media[s.id] || { foto: [], video: [], dokumen: [] };
+    const fotoCount = m.foto?.length || 0;
+    const videoCount = m.video?.length || 0;
+    const dokumenCount = m.dokumen?.length || 0;
+    const total = fotoCount + videoCount + dokumenCount;
+    
+    return {
+      ...s,
+      fotoCount,
+      videoCount,
+      dokumenCount,
+      total
+    };
+  });
+  
+  // Filter hanya yang punya media, lalu urutkan descending
+  const activeSchools = schoolStats
+    .filter(s => s.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5); // Ambil top 5
+  
+  // Sembunyikan section jika tidak ada sekolah aktif
+  if (activeSchools.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  
+  section.style.display = 'block';
+  
+  // Medali untuk 3 teratas
+  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+  const rankColors = [
+    'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', // Emas
+    'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)', // Perak
+    'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)', // Perunggu
+    'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', // Biru muda
+    'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)'  // Ungu muda
+  ];
+  
+  container.innerHTML = activeSchools.map((s, idx) => `
+    <div class="dash-card" style="
+      background:${rankColors[idx]}; 
+      border:2px solid ${idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#ea580c' : 'transparent'};
+      cursor:pointer;
+      transition:transform 0.2s;
+      position:relative;
+      overflow:hidden;
+    " 
+    onmouseover="this.style.transform='translateY(-4px)'" 
+    onmouseout="this.style.transform='translateY(0)'"
+    onclick="window.viewSchoolMedia(${s.id})">
+      
+      <div style="position:absolute; top:0.5rem; right:0.75rem; font-size:2rem; opacity:0.3;">
+        ${medals[idx]}
+      </div>
+      
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+        <div style="font-size:1.75rem;">${medals[idx]}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:700; font-size:0.95rem; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(s.nama)}">
+            ${escapeHtml(s.nama)}
+          </div>
+          <div style="font-size:0.75rem; color:#64748b; margin-top:0.15rem;">
+            ${escapeHtml(s.kecamatan)} • ${s.bentuk}
+          </div>
+        </div>
+      </div>
+      
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem; margin-bottom:0.5rem;">
+        <div style="text-align:center; padding:0.4rem; background:rgba(255,255,255,0.6); border-radius:8px;">
+          <div style="font-size:1.1rem;">📸</div>
+          <div style="font-weight:700; font-size:1rem;">${s.fotoCount}</div>
+          <div style="font-size:0.65rem; color:#64748b;">Foto</div>
+        </div>
+        <div style="text-align:center; padding:0.4rem; background:rgba(255,255,255,0.6); border-radius:8px;">
+          <div style="font-size:1.1rem;">🎬</div>
+          <div style="font-weight:700; font-size:1rem;">${s.videoCount}</div>
+          <div style="font-size:0.65rem; color:#64748b;">Video</div>
+        </div>
+        <div style="text-align:center; padding:0.4rem; background:rgba(255,255,255,0.6); border-radius:8px;">
+          <div style="font-size:1.1rem;">📄</div>
+          <div style="font-weight:700; font-size:1rem;">${s.dokumenCount}</div>
+          <div style="font-size:0.65rem; color:#64748b;">Dokumen</div>
+        </div>
+      </div>
+      
+      <div style="text-align:center; padding:0.5rem; background:rgba(0,0,0,0.05); border-radius:8px; font-weight:700; font-size:1.1rem;">
+        📊 Total: ${s.total} media
+      </div>
+    </div>
+  `).join('');
 };
 
 // ============ ADMIN: SCHOOL TABLE ============
