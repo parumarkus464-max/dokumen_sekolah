@@ -879,7 +879,10 @@ window.renderDashboard = async function() {
       <div class="dash-card success"><div class="dash-label">📊 Total Media</div><div class="dash-value">${totalMedia}</div><div class="dash-sub">Foto, video, dan dokumen</div></div>
       <div class="dash-card warning"><div class="dash-label">📸 Total Foto</div><div class="dash-value">${totalFoto}</div><div class="dash-sub">Dari seluruh sekolah</div></div>
     `;
+    
+    await window.renderTopSchools(); // ✅ TAMBAHAN: Refresh leaderboard saat dashboard di-render ulang
   } else {
+    // ... kode untuk sekolah (tidak diubah)
     const m = media[currentUser.schoolId] || { foto: [], video: [], dokumen: [] };
     const total = (m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0);
     grid.innerHTML = `
