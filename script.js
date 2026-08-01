@@ -958,19 +958,16 @@ window.viewSchoolMedia = async function(schoolId) {
   const school = schools.find(s => s.id === schoolId);
   if (!school) return;
 
-  // PERBAIKAN: Gunakan ID yang baru (section-sekolahMedia)
-  const mediaSection = document.getElementById('section-sekolahMedia');
-  mediaSection.style.display = 'block';
-
   const origUser = currentUser;
   currentUser = { type: 'sekolah', schoolId, school };
   
   await window.renderMyMedia();
   
-  // PERBAIKAN: Panggil showSection dengan nama yang sesuai ID
-  window.showSection('sekolahMedia'); 
+  // PERBAIKAN: Gunakan showSection untuk berpindah ke section media
+  window.showSection('sekolahMedia');
 
   // Tambahkan tombol kembali jika belum ada
+  const mediaSection = document.getElementById('section-sekolahMedia');
   if (!document.getElementById('backBtn')) {
     const btn = document.createElement('button');
     btn.id = 'backBtn';
@@ -979,21 +976,19 @@ window.viewSchoolMedia = async function(schoolId) {
     btn.textContent = '← Kembali ke Dashboard';
     btn.onclick = async () => {
       currentUser = origUser;
-      mediaSection.style.display = 'none';
       btn.remove();
       
       // Kembalikan tampilan ke dashboard admin
-      if (origUser.type === 'admin') {
-        document.getElementById('adminStatusSection').style.display = 'block';
-        document.getElementById('adminSchoolList').style.display = 'block';
-        window.showSection('dashboard');
-        await window.renderDashboard();
-        await window.renderSchoolTable(); 
-      } else {
-        window.showSection('dashboard');
-      }
+      window.showSection('dashboard');
+      await window.renderDashboard();
+      await window.renderSchoolTable();
+      await window.renderStatusSection();
     };
-    // Masukkan tombol di paling atas section media
+    mediaSection.insertBefore(btn, mediaSection.firstChild);
+  }
+};
+
+// Masukkan tombol di paling atas section media
     mediaSection.insertBefore(btn, mediaSection.firstChild);
   }
 };
@@ -1017,9 +1012,10 @@ window.renderMyMedia = async function() {
 
 window.switchMediaTab = function(tab, btn) {
   currentMediaTab = tab;
-  document.querySelectorAll('#sekolahMediaSection .tab-btn').forEach(b => b.classList.remove('active'));
+  // PERBAIKAN: Scope hanya di dalam section-sekolahMedia
+  document.querySelectorAll('#section-sekolahMedia .tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('#sekolahMediaSection .section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('#section-sekolahMedia .section').forEach(s => s.classList.remove('active'));
   document.getElementById('media-' + tab).classList.add('active');
 };
 
@@ -1237,10 +1233,13 @@ function extractYoutubeId(url) {
 
 // ============ PROFILE & PASSWORD ============
 window.showSection = function(name) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  // PERBAIKAN: Hanya mempengaruhi section utama (ID berawalan "section-")
+  // Agar tidak merusak tab media-foto/video/dokumen yang juga punya class "section"
+  document.querySelectorAll('[id^="section-"]').forEach(s => s.classList.remove('active'));
   const target = document.getElementById('section-' + name);
   if (target) target.classList.add('active');
   
+  // Logika profil tetap sama
   if (name === 'profile' && currentUser.type === 'sekolah') {
     document.getElementById('profileSchoolName').textContent = currentUser.school.nama;
     document.getElementById('profileNpsn').textContent = currentUser.school.npsn;
@@ -1255,6 +1254,7 @@ window.showSection = function(name) {
     document.getElementById('profileRole').textContent = 'Admin Dinas';
   }
 };
+
 
 window.changePassword = async function() {
   const oldPass = document.getElementById('oldPass').value;
