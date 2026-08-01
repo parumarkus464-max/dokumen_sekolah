@@ -958,37 +958,45 @@ window.viewSchoolMedia = async function(schoolId) {
   const school = schools.find(s => s.id === schoolId);
   if (!school) return;
 
-  document.getElementById('adminSchoolList').style.display = 'none';
-  document.getElementById('sekolahMediaSection').style.display = 'block';
-  document.getElementById('adminStatusSection').style.display = 'none'; // Pastikan status section tersembunyi
+  // PERBAIKAN: Gunakan ID yang baru (section-sekolahMedia)
+  const mediaSection = document.getElementById('section-sekolahMedia');
+  mediaSection.style.display = 'block';
 
   const origUser = currentUser;
   currentUser = { type: 'sekolah', schoolId, school };
   
   await window.renderMyMedia();
-  // PERBAIKAN: Tampilkan section media, bukan dashboard, agar tidak konflik UI
+  
+  // PERBAIKAN: Panggil showSection dengan nama yang sesuai ID
   window.showSection('sekolahMedia'); 
 
-  const section = document.getElementById('sekolahMediaSection');
+  // Tambahkan tombol kembali jika belum ada
   if (!document.getElementById('backBtn')) {
     const btn = document.createElement('button');
     btn.id = 'backBtn';
     btn.className = 'btn btn-outline btn-sm';
     btn.style.marginBottom = '1rem';
-    btn.textContent = '← Kembali ke Daftar Sekolah';
+    btn.textContent = '← Kembali ke Dashboard';
     btn.onclick = async () => {
       currentUser = origUser;
-      document.getElementById('adminSchoolList').style.display = 'block';
-      document.getElementById('sekolahMediaSection').style.display = 'none';
-      document.getElementById('adminStatusSection').style.display = 'block';
+      mediaSection.style.display = 'none';
       btn.remove();
-      await window.renderDashboard();
-      await window.renderSchoolTable(); 
+      
+      // Kembalikan tampilan ke dashboard admin
+      if (origUser.type === 'admin') {
+        document.getElementById('adminStatusSection').style.display = 'block';
+        document.getElementById('adminSchoolList').style.display = 'block';
+        window.showSection('dashboard');
+        await window.renderDashboard();
+        await window.renderSchoolTable(); 
+      } else {
+        window.showSection('dashboard');
+      }
     };
-    section.insertBefore(btn, section.firstChild);
+    // Masukkan tombol di paling atas section media
+    mediaSection.insertBefore(btn, mediaSection.firstChild);
   }
 };
-
 // ============ SEKOLAH: MY MEDIA ============
 let currentMediaTab = 'foto';
 let currentFormType = null;
