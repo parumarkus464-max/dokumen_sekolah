@@ -924,7 +924,7 @@ window.renderTopSchools = async function() {
   const activeSchools = schoolStats
     .filter(s => s.total > 0)
     .sort((a, b) => b.total - a.total)
-    .slice(0, 5); // Ambil top 5
+    .slice(0, 10); // Ambil top 5
   
   // Sembunyikan section jika tidak ada sekolah aktif
   if (activeSchools.length === 0) {
