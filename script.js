@@ -865,11 +865,15 @@ window.showApp = async function() {
     document.getElementById('userName').textContent = 'Administrator';
     document.getElementById('adminSchoolList').style.display = 'block';
     document.getElementById('sekolahMediaSection').style.display = 'none';
+    document.getElementById('adminStatusSection').style.display = 'block'; // ✅ TAMBAHAN
+    await window.renderStatusSection(); // ✅ TAMBAHAN
+    window.populateStatusFilters(); // ✅ TAMBAHAN
   } else {
     document.getElementById('userRole').textContent = 'SEKOLAH';
     document.getElementById('userName').textContent = currentUser.school.nama;
     document.getElementById('adminSchoolList').style.display = 'none';
     document.getElementById('sekolahMediaSection').style.display = 'block';
+    document.getElementById('adminStatusSection').style.display = 'none'; // ✅ TAMBAHAN
   }
   
   await window.renderDashboard();
@@ -1345,3 +1349,146 @@ if (savedAuth) {
     }
   } catch(e) {}
 }
+// ============ ADMIN: STATUS PENGIRIMAN SEKOLAH ============
+let statusTab = 'belum';
+let statusPage = 1;
+const statusPerPage = 25;
+
+window.populateStatusFilters = function() {
+  const bentukSelect = document.getElementById('filterBentukStatus');
+  if (bentukSelect.options.length <= 1) {
+    const bentukSet = new Set(schools.map(s => s.bentuk));
+    [...bentukSet].sort().forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b; opt.textContent = b;
+      bentukSelect.appendChild(opt);
+    });
+  }
+};
+
+window.switchStatusTab = function(tab, btn) {
+  statusTab = tab;
+  statusPage = 1;
+  document.querySelectorAll('#adminStatusSection .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  window.renderStatusTable();
+};
+
+window.renderStatusSection = async function() {
+  const media = await window.getMedia();
+  
+  let sudahCount = 0;
+  let belumCount = 0;
+  
+  schools.forEach(s => {
+    const m = media[s.id];
+    const totalMedia = m ? ((m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0)) : 0;
+    if (totalMedia > 0) sudahCount++;
+    else belumCount++;
+  });
+  
+  const persen = schools.length > 0 ? ((sudahCount / schools.length) * 100).toFixed(1) : 0;
+  
+  document.getElementById('countSudah').textContent = sudahCount;
+  document.getElementById('countBelum').textContent = belumCount;
+  document.getElementById('countPersen').textContent = persen + '%';
+  document.getElementById('tabSudah').textContent = sudahCount;
+  document.getElementById('tabBelum').textContent = belumCount;
+  
+  window.renderStatusTable();
+};
+
+window.renderStatusTable = async function() {
+  const q = document.getElementById('searchStatus').value.toLowerCase();
+  const bentuk = document.getElementById('filterBentukStatus').value;
+  const media = await window.getMedia();
+  
+  // Filter sekolah berdasarkan status tab
+  let filtered = schools.filter(s => {
+    const m = media[s.id];
+    const totalMedia = m ? ((m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0)) : 0;
+    const isSudah = totalMedia > 0;
+    
+    const matchStatus = statusTab === 'sudah' ? isSudah : !isSudah;
+    const matchQ = !q || s.nama.toLowerCase().includes(q) || s.npsn.includes(q) || s.kecamatan.toLowerCase().includes(q);
+    const matchB = !bentuk || s.bentuk === bentuk;
+    
+    return matchStatus && matchQ && matchB;
+  });
+  
+  const tbody = document.getElementById('statusTableBody');
+  const totalPages = Math.ceil(filtered.length / statusPerPage) || 1;
+  if (statusPage > totalPages) statusPage = totalPages;
+  const start = (statusPage - 1) * statusPerPage;
+  const pageData = filtered.slice(start, start + statusPerPage);
+  
+  if (!pageData.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">${statusTab === 'sudah' ? 'Belum ada sekolah yang mengirim media' : '🎉 Semua sekolah sudah mengirim!'}</td></tr>`;
+  } else {
+    tbody.innerHTML = pageData.map((s, idx) => {
+      const m = media[s.id];
+      const fotoCount = m?.foto?.length || 0;
+      const videoCount = m?.video?.length || 0;
+      const dokumenCount = m?.dokumen?.length || 0;
+      const total = fotoCount + videoCount + dokumenCount;
+      
+      let statusBadge = '';
+      if (statusTab === 'sudah') {
+        statusBadge = `<span class="badge badge-SD" style="background:#d1fae5; color:#065f46;">✅ Aktif</span>
+          <div style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem;">
+            📸 ${fotoCount} | 🎬 ${videoCount} | 📄 ${dokumenCount}
+          </div>`;
+      } else {
+        statusBadge = `<span class="badge" style="background:#fef3c7; color:#92400e;">⏳ Belum</span>`;
+      }
+      
+      return `
+        <tr>
+          <td>${start + idx + 1}</td>
+          <td><strong>${escapeHtml(s.nama)}</strong></td>
+          <td><code>${s.npsn}</code></td>
+          <td><span class="badge badge-${s.bentuk}">${s.bentuk}</span></td>
+          <td>${escapeHtml(s.kecamatan)}</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick="window.viewSchoolMedia(${s.id})">
+              👁️ Lihat
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  // Pagination
+  const pag = document.getElementById('statusPagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; }
+  else {
+    let html = `<button class="page-btn" onclick="window.goStatusPage(${statusPage-1})" ${statusPage===1?'disabled':''}>‹</button>`;
+    for (let i = Math.max(1, statusPage-2); i <= Math.min(totalPages, statusPage+2); i++) {
+      html += `<button class="page-btn ${i===statusPage?'active':''}" onclick="window.goStatusPage(${i})">${i}</button>`;
+    }
+    html += `<button class="page-btn" onclick="window.goStatusPage(${statusPage+1})" ${statusPage===totalPages?'disabled':''}>›</button>`;
+    pag.innerHTML = html;
+  }
+};
+
+window.goStatusPage = function(p) {
+  const media = window.getMedia();
+  // Hitung ulang total pages
+  const filtered = schools.filter(s => {
+    const q = document.getElementById('searchStatus').value.toLowerCase();
+    const bentuk = document.getElementById('filterBentukStatus').value;
+    const matchQ = !q || s.nama.toLowerCase().includes(q) || s.npsn.includes(q) || s.kecamatan.toLowerCase().includes(q);
+    const matchB = !bentuk || s.bentuk === bentuk;
+    return matchQ && matchB;
+  });
+  const totalPages = Math.ceil(filtered.length / statusPerPage) || 1;
+  if (p < 1 || p > totalPages) return;
+  statusPage = p;
+  window.renderStatusTable();
+};
+
+// Event listener untuk search & filter status
+document.getElementById('searchStatus').addEventListener('input', () => { statusPage = 1; window.renderStatusTable(); });
+document.getElementById('filterBentukStatus').addEventListener('change', () => { statusPage = 1; window.renderStatusTable(); });
