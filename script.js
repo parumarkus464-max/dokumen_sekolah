@@ -784,7 +784,7 @@ window.saveMedia = async function(mediaData) {
 
 let currentUser = null;
 
-// ============ LOGIN / LOGOUT (DENGAN DEBUG LOG) ============
+// ============ LOGIN / LOGOUT ============
 window.handleLogin = async function(e) {
   e.preventDefault();
   const user = document.getElementById('loginUser').value.trim();
@@ -792,57 +792,36 @@ window.handleLogin = async function(e) {
   const errEl = document.getElementById('loginError');
   
   console.log("🔍 Mencoba login...");
-  console.log("Username:", user);
-  console.log("Password:", pass);
-
   try {
-    // 1. Cek Login Admin
     if (user.toLowerCase() === 'admin') {
       const p = await window.getPasswords();
       const adminPass = p['_admin'] || 'admin2026';
-      console.log("Password admin di database:", adminPass);
-      
       if (pass === adminPass) {
         currentUser = { type: 'admin' };
         localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
         console.log("✅ Login Admin Berhasil!");
         await window.showApp();
         return;
-      } else {
-        console.log("❌ Password admin salah.");
       }
-    } 
-    // 2. Cek Login Sekolah
-    else {
+    } else {
       const school = schools.find(s => s.npsn === user);
-      console.log("Data sekolah ditemukan:", school ? "Ya (" + school.nama + ")" : "Tidak");
-      
       if (school) {
         const correctPass = await window.getSchoolPassword(school.npsn);
-        console.log("Password sekolah di database:", correctPass);
-        
         if (pass === correctPass) {
           currentUser = { type: 'sekolah', schoolId: school.id, school };
           localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
           console.log("✅ Login Sekolah Berhasil!");
           await window.showApp();
           return;
-        } else {
-          console.log("❌ Password sekolah salah.");
         }
-      } else {
-        console.log("❌ NPSN tidak ditemukan di data.");
       }
     }
-    
-    // Jika sampai sini, berarti login gagal
     console.warn("⚠️ Username atau password salah!");
     errEl.classList.add('show');
     setTimeout(() => errEl.classList.remove('show'), 3000);
-    
   } catch (error) {
     console.error("💥 ERROR SAAT LOGIN:", error);
-    alert("Terjadi kesalahan sistem. Pastikan konfigurasi Firebase sudah benar. Cek Console (F12) untuk detail.");
+    alert("Terjadi kesalahan sistem. Pastikan konfigurasi Firebase sudah benar.");
   }
 };
 
@@ -865,15 +844,15 @@ window.showApp = async function() {
     document.getElementById('userName').textContent = 'Administrator';
     document.getElementById('adminSchoolList').style.display = 'block';
     document.getElementById('sekolahMediaSection').style.display = 'none';
-    document.getElementById('adminStatusSection').style.display = 'block'; // ✅ TAMBAHAN
-    await window.renderStatusSection(); // ✅ TAMBAHAN
-    window.populateStatusFilters(); // ✅ TAMBAHAN
+    document.getElementById('adminStatusSection').style.display = 'block';
+    await window.renderStatusSection();
+    window.populateStatusFilters();
   } else {
     document.getElementById('userRole').textContent = 'SEKOLAH';
     document.getElementById('userName').textContent = currentUser.school.nama;
     document.getElementById('adminSchoolList').style.display = 'none';
     document.getElementById('sekolahMediaSection').style.display = 'block';
-    document.getElementById('adminStatusSection').style.display = 'none'; // ✅ TAMBAHAN
+    document.getElementById('adminStatusSection').style.display = 'none';
   }
   
   await window.renderDashboard();
@@ -981,12 +960,14 @@ window.viewSchoolMedia = async function(schoolId) {
 
   document.getElementById('adminSchoolList').style.display = 'none';
   document.getElementById('sekolahMediaSection').style.display = 'block';
+  document.getElementById('adminStatusSection').style.display = 'none'; // Pastikan status section tersembunyi
 
   const origUser = currentUser;
   currentUser = { type: 'sekolah', schoolId, school };
   
   await window.renderMyMedia();
-  window.showSection('dashboard');
+  // PERBAIKAN: Tampilkan section media, bukan dashboard, agar tidak konflik UI
+  window.showSection('sekolahMedia'); 
 
   const section = document.getElementById('sekolahMediaSection');
   if (!document.getElementById('backBtn')) {
@@ -999,6 +980,7 @@ window.viewSchoolMedia = async function(schoolId) {
       currentUser = origUser;
       document.getElementById('adminSchoolList').style.display = 'block';
       document.getElementById('sekolahMediaSection').style.display = 'none';
+      document.getElementById('adminStatusSection').style.display = 'block';
       btn.remove();
       await window.renderDashboard();
       await window.renderSchoolTable(); 
@@ -1193,12 +1175,15 @@ window.submitMedia = async function(e) {
     reader.onload = async (ev) => {
       await finish(ev.target.result);
     };
+    reader.onerror = () => { // PERBAIKAN: Menambahkan error handling FileReader
+      alert('Gagal membaca file. Silakan coba lagi atau gunakan URL gambar.');
+    };
     reader.readAsDataURL(file);
   } else if (currentFormType === 'video') {
     const ytId = extractYoutubeId(url);
-    finish(ytId ? `https://www.youtube.com/embed/${ytId}` : url);
+    await finish(ytId ? `https://www.youtube.com/embed/${ytId}` : url); // PERBAIKAN: Menambahkan await
   } else {
-    finish(url);
+    await finish(url); // PERBAIKAN: Menambahkan await
   }
 };
 
@@ -1245,7 +1230,8 @@ function extractYoutubeId(url) {
 // ============ PROFILE & PASSWORD ============
 window.showSection = function(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('section-' + name).classList.add('active');
+  const target = document.getElementById('section-' + name);
+  if (target) target.classList.add('active');
   
   if (name === 'profile' && currentUser.type === 'sekolah') {
     document.getElementById('profileSchoolName').textContent = currentUser.school.nama;
@@ -1349,6 +1335,7 @@ if (savedAuth) {
     }
   } catch(e) {}
 }
+
 // ============ ADMIN: STATUS PENGIRIMAN SEKOLAH ============
 let statusTab = 'belum';
 let statusPage = 1;
@@ -1356,7 +1343,7 @@ const statusPerPage = 25;
 
 window.populateStatusFilters = function() {
   const bentukSelect = document.getElementById('filterBentukStatus');
-  if (bentukSelect.options.length <= 1) {
+  if (bentukSelect && bentukSelect.options.length <= 1) {
     const bentukSet = new Set(schools.map(s => s.bentuk));
     [...bentukSet].sort().forEach(b => {
       const opt = document.createElement('option');
@@ -1403,7 +1390,6 @@ window.renderStatusTable = async function() {
   const bentuk = document.getElementById('filterBentukStatus').value;
   const media = await window.getMedia();
   
-  // Filter sekolah berdasarkan status tab
   let filtered = schools.filter(s => {
     const m = media[s.id];
     const totalMedia = m ? ((m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0)) : 0;
@@ -1430,7 +1416,6 @@ window.renderStatusTable = async function() {
       const fotoCount = m?.foto?.length || 0;
       const videoCount = m?.video?.length || 0;
       const dokumenCount = m?.dokumen?.length || 0;
-      const total = fotoCount + videoCount + dokumenCount;
       
       let statusBadge = '';
       if (statusTab === 'sudah') {
@@ -1460,7 +1445,6 @@ window.renderStatusTable = async function() {
     }).join('');
   }
   
-  // Pagination
   const pag = document.getElementById('statusPagination');
   if (totalPages <= 1) { pag.innerHTML = ''; }
   else {
@@ -1473,22 +1457,37 @@ window.renderStatusTable = async function() {
   }
 };
 
-window.goStatusPage = function(p) {
-  const media = window.getMedia();
-  // Hitung ulang total pages
+window.goStatusPage = async function(p) { // PERBAIKAN: Ditambahkan async
+  const media = await window.getMedia(); // PERBAIKAN: Ditambahkan await
+  const q = document.getElementById('searchStatus').value.toLowerCase();
+  const bentuk = document.getElementById('filterBentukStatus').value;
+  
+  // PERBAIKAN: Logika filter sekarang mencakup matchStatus agar perhitungan halaman akurat
   const filtered = schools.filter(s => {
-    const q = document.getElementById('searchStatus').value.toLowerCase();
-    const bentuk = document.getElementById('filterBentukStatus').value;
+    const m = media[s.id];
+    const totalMedia = m ? ((m.foto?.length || 0) + (m.video?.length || 0) + (m.dokumen?.length || 0)) : 0;
+    const isSudah = totalMedia > 0;
+    
+    const matchStatus = statusTab === 'sudah' ? isSudah : !isSudah;
     const matchQ = !q || s.nama.toLowerCase().includes(q) || s.npsn.includes(q) || s.kecamatan.toLowerCase().includes(q);
     const matchB = !bentuk || s.bentuk === bentuk;
-    return matchQ && matchB;
+    
+    return matchStatus && matchQ && matchB;
   });
+
   const totalPages = Math.ceil(filtered.length / statusPerPage) || 1;
   if (p < 1 || p > totalPages) return;
+  
   statusPage = p;
   window.renderStatusTable();
 };
 
 // Event listener untuk search & filter status
-document.getElementById('searchStatus').addEventListener('input', () => { statusPage = 1; window.renderStatusTable(); });
-document.getElementById('filterBentukStatus').addEventListener('change', () => { statusPage = 1; window.renderStatusTable(); });
+const searchStatusEl = document.getElementById('searchStatus');
+if (searchStatusEl) {
+  searchStatusEl.addEventListener('input', () => { statusPage = 1; window.renderStatusTable(); });
+}
+const filterBentukStatusEl = document.getElementById('filterBentukStatus');
+if (filterBentukStatusEl) {
+  filterBentukStatusEl.addEventListener('change', () => { statusPage = 1; window.renderStatusTable(); });
+}
