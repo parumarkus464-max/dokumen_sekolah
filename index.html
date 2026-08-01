@@ -26,7 +26,6 @@
 <div class="login-page" id="loginPage">
   <div class="login-box">
     <div class="login-logo">
-      <!-- Pastikan file logo.png ada di folder yang sama, atau ganti dengan URL logo -->
       <img src="logo.png" alt="Logo" class="login-logo-img" onerror="this.style.display='none'">
       <h1>Sistem Informasi Sekolah</h1>
       <p>Kabupaten Ende – NTT</p>
@@ -72,23 +71,18 @@
 
   <div class="container">
     
-    <!-- 1. DASHBOARD SECTION (Default Admin) -->
+    <!-- ✅ 1. DASHBOARD SECTION (Hanya 1, tanpa duplikat) -->
     <div class="section active" id="section-dashboard">
       <div class="dashboard-grid" id="dashboardGrid"></div>
-
-      <!-- DASHBOARD SECTION -->
-<div class="section active" id="section-dashboard">
-  <div class="dashboard-grid" id="dashboardGrid"></div>
-  
-  <!-- 🏆 TAMBAHAN: Leaderboard Sekolah Terbaik (Hanya muncul untuk Admin) -->
-  <div id="topSchoolsSection" style="display:none; margin-bottom:2rem;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-      <h2 style="margin:0;">🏆 Sekolah Teraktif (Top 5)</h2>
-      <span style="font-size:0.85rem; color:var(--muted);">Berdasarkan total media yang dikirim</span>
-    </div>
-    <div id="topSchoolsList" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;"></div>
-  </div>
-  
+      
+      <!-- 🏆 Leaderboard Sekolah Terbaik -->
+      <div id="topSchoolsSection" style="display:none; margin-bottom:2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h2 style="margin:0;">🏆 Sekolah Teraktif (Top 5)</h2>
+          <span style="font-size:0.85rem; color:var(--muted);">Berdasarkan total media yang dikirim</span>
+        </div>
+        <div id="topSchoolsList" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;"></div>
+      </div>
       
       <!-- Admin: Status Pengiriman Sekolah -->
       <div id="adminStatusSection" style="margin-bottom:2rem;">
@@ -175,10 +169,9 @@
           <div class="pagination" id="pagination"></div>
         </div>
       </div>
-    </div>
+    </div> <!-- ✅ Penutup section-dashboard yang benar -->
     
-    <!-- 2. SEKOLAH MEDIA SECTION (Default Sekolah & Admin saat melihat detail) -->
-    <!-- PERBAIKAN: Ditambahkan class="section" dan id="section-sekolahMedia" -->
+    <!-- ✅ 2. SEKOLAH MEDIA SECTION -->
     <div class="section" id="section-sekolahMedia">
       <h2 style="margin-bottom:1rem;">📁 Media Sekolah</h2>
       
@@ -213,7 +206,7 @@
       </div>
     </div>
     
-    <!-- 3. PROFILE SECTION -->
+    <!-- ✅ 3. PROFILE SECTION -->
     <div class="section" id="section-profile">
       <h2 style="margin-bottom:1rem;">⚙️ Pengaturan Akun</h2>
       <div class="school-info-card">
@@ -241,8 +234,8 @@
           <input type="password" id="confirmPass">
         </div>
         <button class="btn" onclick="window.changePassword()">💾 Simpan Password</button>
-        <div id="passMsg" style="margin-top:1rem;"></div>
-      </div
+        <div id="passMsg" style="margin-top:1rem;"></div> <!-- ✅ PERBAIKAN: Ditambahkan tanda > -->
+      </div>
     </div>
   </div>
 </div>
@@ -295,7 +288,6 @@
   </div>
 </div>
 
-<!-- PENTING: type="module" wajib ada agar import Firebase berfungsi -->
 <script type="module" src="script.js"></script>
 </body>
 </html>
