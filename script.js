@@ -842,17 +842,17 @@ window.showApp = async function() {
   if (currentUser.type === 'admin') {
     document.getElementById('userRole').textContent = 'ADMIN DINAS';
     document.getElementById('userName').textContent = 'Administrator';
-    document.getElementById('adminSchoolList').style.display = 'block';
-    document.getElementById('sekolahMediaSection').style.display = 'none';
-    document.getElementById('adminStatusSection').style.display = 'block';
+    // PERBAIKAN: Tidak perlu mengatur display manual, cukup panggil showSection
+    window.showSection('dashboard');
+    
+    // Render status & tabel setelah section tampil
     await window.renderStatusSection();
     window.populateStatusFilters();
   } else {
     document.getElementById('userRole').textContent = 'SEKOLAH';
     document.getElementById('userName').textContent = currentUser.school.nama;
-    document.getElementById('adminSchoolList').style.display = 'none';
-    document.getElementById('sekolahMediaSection').style.display = 'block';
-    document.getElementById('adminStatusSection').style.display = 'none';
+    // PERBAIKAN: Langsung tampilkan section media sekolah
+    window.showSection('sekolahMedia');
   }
   
   await window.renderDashboard();
