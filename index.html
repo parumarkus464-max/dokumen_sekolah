@@ -75,6 +75,20 @@
     <!-- 1. DASHBOARD SECTION (Default Admin) -->
     <div class="section active" id="section-dashboard">
       <div class="dashboard-grid" id="dashboardGrid"></div>
+
+      <!-- DASHBOARD SECTION -->
+<div class="section active" id="section-dashboard">
+  <div class="dashboard-grid" id="dashboardGrid"></div>
+  
+  <!-- 🏆 TAMBAHAN: Leaderboard Sekolah Terbaik (Hanya muncul untuk Admin) -->
+  <div id="topSchoolsSection" style="display:none; margin-bottom:2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <h2 style="margin:0;">🏆 Sekolah Teraktif (Top 5)</h2>
+      <span style="font-size:0.85rem; color:var(--muted);">Berdasarkan total media yang dikirim</span>
+    </div>
+    <div id="topSchoolsList" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;"></div>
+  </div>
+  
       
       <!-- Admin: Status Pengiriman Sekolah -->
       <div id="adminStatusSection" style="margin-bottom:2rem;">
