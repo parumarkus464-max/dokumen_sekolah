@@ -4,12 +4,14 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 
 // ⚠️ GANTI DENGAN KONFIGURASI FIREBASE ANDA SENDIRI
 const firebaseConfig = {
-  apiKey: "GANTI_DENGAN_API_KEY_ANDA",
-  authDomain: "PROJECT_ID_ANDA.firebaseapp.com",
-  projectId: "PROJECT_ID_ANDA",
-  storageBucket: "PROJECT_ID_ANDA.appspot.com",
-  messagingSenderId: "SENDER_ID_ANDA",
-  appId: "APP_ID_ANDA"
+  apiKey: "AIzaSyC-8iQSjLMjxDM9SRCoAcky2h-Gjogg4jg",
+  authDomain: "pk-ende.firebaseapp.com",
+  databaseURL: "https://pk-ende-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pk-ende",
+  storageBucket: "pk-ende.firebasestorage.app",
+  messagingSenderId: "804719766454",
+  appId: "1:804719766454:web:5a5c5ceecafae76886af17",
+  measurementId: "G-VHNNC0YX7S"
 };
 
 const app = initializeApp(firebaseConfig);
