@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ⚠️ GANTI DENGAN KONFIGURASI FIREBASE ANDA SENDIRI
+// ⚠️ PENTING: GANTI DENGAN KONFIGURASI FIREBASE ANDA SENDIRI
 const firebaseConfig = {
   apiKey: "AIzaSyC-8iQSjLMjxDM9SRCoAcky2h-Gjogg4jg",
   authDomain: "pk-ende.firebaseapp.com",
@@ -14,10 +14,16 @@ const firebaseConfig = {
   measurementId: "G-VHNNC0YX7S"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  console.log("✅ Firebase berhasil diinisialisasi");
+} catch (error) {
+  console.error("❌ Gagal inisialisasi Firebase. Pastikan firebaseConfig sudah diisi dengan benar!", error);
+}
 
-// ============ DATA SEKOLAH ============
+// ============ DATA SEKOLAH (LENGKAP) ============
 const RAW_DATA = `KB ARARA	70027792	KB	Ende
 KB Arrahman Watubara	70005156	KB	Wewaria
 KB FAJAR PAGI	70014378	KB	Kota Baru
@@ -740,9 +746,9 @@ const PREDEFINED_TITLES = {
   dokumen: ["Kurikulum Sekolah", "Data Siswa", "Data Guru dan Tenaga Kependidikan", "Laporan Keuangan", "Rencana Kerja Sekolah (RKS)", "Program Kerja Tahunan", "Laporan Evaluasi", "Surat Keputusan (SK)", "Notulen Rapat", "Dokumen Akreditasi", "Dokumen BOS", "Panduan / Pedoman", "Formulir Pendaftaran", "Kalender Pendidikan", "Struktur Organisasi", "Lainnya (Ketik Manual)"]
 };
 
-// ============ FIREBASE DATABASE FUNCTIONS (PENGGANTI LOCALSTORAGE) ============
 const AUTH_KEY = 'sisfo_auth';
 
+// ============ FIREBASE DATABASE FUNCTIONS ============
 window.getPasswords = async function() {
   const docRef = doc(db, "sisfo_data", "passwords");
   const docSnap = await getDoc(docRef);
@@ -778,37 +784,66 @@ window.saveMedia = async function(mediaData) {
 
 let currentUser = null;
 
-// ============ LOGIN / LOGOUT ============
+// ============ LOGIN / LOGOUT (DENGAN DEBUG LOG) ============
 window.handleLogin = async function(e) {
   e.preventDefault();
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
   const errEl = document.getElementById('loginError');
   
-  if (user.toLowerCase() === 'admin') {
-    const p = await window.getPasswords();
-    const adminPass = p['_admin'] || 'admin2026';
-    if (pass === adminPass) {
-      currentUser = { type: 'admin' };
-      localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
-      await window.showApp();
-      return;
+  console.log("🔍 Mencoba login...");
+  console.log("Username:", user);
+  console.log("Password:", pass);
+
+  try {
+    // 1. Cek Login Admin
+    if (user.toLowerCase() === 'admin') {
+      const p = await window.getPasswords();
+      const adminPass = p['_admin'] || 'admin2026';
+      console.log("Password admin di database:", adminPass);
+      
+      if (pass === adminPass) {
+        currentUser = { type: 'admin' };
+        localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
+        console.log("✅ Login Admin Berhasil!");
+        await window.showApp();
+        return;
+      } else {
+        console.log("❌ Password admin salah.");
+      }
+    } 
+    // 2. Cek Login Sekolah
+    else {
+      const school = schools.find(s => s.npsn === user);
+      console.log("Data sekolah ditemukan:", school ? "Ya (" + school.nama + ")" : "Tidak");
+      
+      if (school) {
+        const correctPass = await window.getSchoolPassword(school.npsn);
+        console.log("Password sekolah di database:", correctPass);
+        
+        if (pass === correctPass) {
+          currentUser = { type: 'sekolah', schoolId: school.id, school };
+          localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
+          console.log("✅ Login Sekolah Berhasil!");
+          await window.showApp();
+          return;
+        } else {
+          console.log("❌ Password sekolah salah.");
+        }
+      } else {
+        console.log("❌ NPSN tidak ditemukan di data.");
+      }
     }
+    
+    // Jika sampai sini, berarti login gagal
+    console.warn("⚠️ Username atau password salah!");
+    errEl.classList.add('show');
+    setTimeout(() => errEl.classList.remove('show'), 3000);
+    
+  } catch (error) {
+    console.error("💥 ERROR SAAT LOGIN:", error);
+    alert("Terjadi kesalahan sistem. Pastikan konfigurasi Firebase sudah benar. Cek Console (F12) untuk detail.");
   }
-  
-  const school = schools.find(s => s.npsn === user);
-  if (school) {
-    const correctPass = await window.getSchoolPassword(school.npsn);
-    if (pass === correctPass) {
-      currentUser = { type: 'sekolah', schoolId: school.id, school };
-      localStorage.setItem(AUTH_KEY, JSON.stringify(currentUser));
-      await window.showApp();
-      return;
-    }
-  }
-  
-  errEl.classList.add('show');
-  setTimeout(() => errEl.classList.remove('show'), 3000);
 };
 
 window.handleLogout = function() {
@@ -1146,8 +1181,6 @@ window.submitMedia = async function(e) {
   
   if (currentFormType === 'foto' && fileInput.files[0] && !url) {
     const file = fileInput.files[0];
-    // ⚠️ PERINGATAN: Firestore memiliki batas 1MB per dokumen. 
-    // Kami batasi upload file lokal maksimal ~300KB agar aman.
     if (file.size > 300000) {
       alert('Ukuran file terlalu besar (Maks 300KB). Silakan kompres foto atau gunakan URL gambar dari internet/Google Drive.');
       return;
@@ -1231,37 +1264,42 @@ window.changePassword = async function() {
   const confirmPass = document.getElementById('confirmPass').value;
   const msgEl = document.getElementById('passMsg');
   
-  if (currentUser.type === 'admin') {
-    const p = await window.getPasswords();
-    const currentAdminPass = p['_admin'] || 'admin2026';
-    if (oldPass !== currentAdminPass) {
-      msgEl.innerHTML = '<div class="alert alert-warning">Password lama salah!</div>';
-      return;
+  try {
+    if (currentUser.type === 'admin') {
+      const p = await window.getPasswords();
+      const currentAdminPass = p['_admin'] || 'admin2026';
+      if (oldPass !== currentAdminPass) {
+        msgEl.innerHTML = '<div class="alert alert-warning">Password lama salah!</div>';
+        return;
+      }
+      p['_admin'] = newPass;
+      await window.savePasswords(p);
+      msgEl.innerHTML = '<div class="alert" style="background:#d1fae5; color:#065f46;">✓ Password admin berhasil diubah!</div>';
+    } else {
+      const currentSchoolPass = await window.getSchoolPassword(currentUser.school.npsn);
+      if (oldPass !== currentSchoolPass) {
+        msgEl.innerHTML = '<div class="alert alert-warning">Password lama salah!</div>';
+        return;
+      }
+      if (newPass.length < 6) {
+        msgEl.innerHTML = '<div class="alert alert-warning">Password minimal 6 karakter!</div>';
+        return;
+      }
+      if (newPass !== confirmPass) {
+        msgEl.innerHTML = '<div class="alert alert-warning">Konfirmasi password tidak cocok!</div>';
+        return;
+      }
+      await window.setSchoolPassword(currentUser.school.npsn, newPass);
+      msgEl.innerHTML = '<div class="alert" style="background:#d1fae5; color:#065f46;">✓ Password berhasil diubah!</div>';
     }
-    p['_admin'] = newPass;
-    await window.savePasswords(p);
-    msgEl.innerHTML = '<div class="alert" style="background:#d1fae5; color:#065f46;">✓ Password admin berhasil diubah!</div>';
-  } else {
-    const currentSchoolPass = await window.getSchoolPassword(currentUser.school.npsn);
-    if (oldPass !== currentSchoolPass) {
-      msgEl.innerHTML = '<div class="alert alert-warning">Password lama salah!</div>';
-      return;
-    }
-    if (newPass.length < 6) {
-      msgEl.innerHTML = '<div class="alert alert-warning">Password minimal 6 karakter!</div>';
-      return;
-    }
-    if (newPass !== confirmPass) {
-      msgEl.innerHTML = '<div class="alert alert-warning">Konfirmasi password tidak cocok!</div>';
-      return;
-    }
-    await window.setSchoolPassword(currentUser.school.npsn, newPass);
-    msgEl.innerHTML = '<div class="alert" style="background:#d1fae5; color:#065f46;">✓ Password berhasil diubah!</div>';
+    
+    document.getElementById('oldPass').value = '';
+    document.getElementById('newPass').value = '';
+    document.getElementById('confirmPass').value = '';
+  } catch (error) {
+    console.error("Error ganti password:", error);
+    alert("Gagal mengubah password. Cek koneksi Firebase.");
   }
-  
-  document.getElementById('oldPass').value = '';
-  document.getElementById('newPass').value = '';
-  document.getElementById('confirmPass').value = '';
 };
 
 function escapeHtml(str) {
